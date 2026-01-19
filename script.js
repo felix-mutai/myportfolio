@@ -4,6 +4,11 @@ const navLinks = document.querySelector('.nav-links');
 const backToTopBtn = document.getElementById('backToTop');
 const contactForm = document.getElementById('contactForm');
 const currentYearSpan = document.getElementById('currentYear');
+const filterBtns = document.querySelectorAll('.filter-btn');
+const projectCards = document.querySelectorAll('.project-card');
+
+// Set current year in footer
+currentYearSpan.textContent = new Date().getFullYear();
 
 // Mobile Menu Toggle
 menuToggle.addEventListener('click', () => {
@@ -14,9 +19,11 @@ menuToggle.addEventListener('click', () => {
     if (navLinks.classList.contains('active')) {
         icon.classList.remove('fa-bars');
         icon.classList.add('fa-times');
+        document.body.style.overflow = 'hidden';
     } else {
         icon.classList.remove('fa-times');
         icon.classList.add('fa-bars');
+        document.body.style.overflow = 'auto';
     }
 });
 
@@ -26,7 +33,20 @@ document.querySelectorAll('.nav-links a').forEach(link => {
         navLinks.classList.remove('active');
         menuToggle.querySelector('i').classList.remove('fa-times');
         menuToggle.querySelector('i').classList.add('fa-bars');
+        document.body.style.overflow = 'auto';
     });
+});
+
+// Close menu when clicking outside on mobile
+document.addEventListener('click', (e) => {
+    if (window.innerWidth < 992) {
+        if (!navLinks.contains(e.target) && !menuToggle.contains(e.target)) {
+            navLinks.classList.remove('active');
+            menuToggle.querySelector('i').classList.remove('fa-times');
+            menuToggle.querySelector('i').classList.add('fa-bars');
+            document.body.style.overflow = 'auto';
+        }
+    }
 });
 
 // Back to Top Button
@@ -45,7 +65,7 @@ backToTopBtn.addEventListener('click', () => {
     });
 });
 
-// Smooth Scrolling for Navigation Links
+// Touch-friendly smooth scrolling for Navigation Links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
         e.preventDefault();
@@ -55,63 +75,123 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         
         const targetElement = document.querySelector(targetId);
         if (targetElement) {
+            // Close mobile menu if open
+            if (window.innerWidth < 992) {
+                navLinks.classList.remove('active');
+                menuToggle.querySelector('i').classList.remove('fa-times');
+                menuToggle.querySelector('i').classList.add('fa-bars');
+                document.body.style.overflow = 'auto';
+            }
+            
+            const headerOffset = 70;
+            const elementPosition = targetElement.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            
             window.scrollTo({
-                top: targetElement.offsetTop - 70,
+                top: offsetPosition,
                 behavior: 'smooth'
             });
         }
     });
 });
 
-// Form Submission
-contactForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Get form values
-    const name = this.querySelector('input[type="text"]').value;
-    const email = this.querySelector('input[type="email"]').value;
-    const message = this.querySelector('textarea').value;
-    
-    // In a real application, you would send this data to a server
-    // For demo purposes, we'll just show an alert
-    alert(`Thank you for your message, ${name}! I'll get back to you at ${email} as soon as possible.`);
-    
-    // Reset form
-    this.reset();
+// Project Filtering
+filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        // Remove active class from all buttons
+        filterBtns.forEach(b => b.classList.remove('active'));
+        // Add active class to clicked button
+        btn.classList.add('active');
+        
+        const filter = btn.getAttribute('data-filter');
+        
+        projectCards.forEach(card => {
+            const categories = card.getAttribute('data-category');
+            
+            if (filter === 'all' || categories.includes(filter)) {
+                card.style.display = 'flex';
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            } else {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    card.style.display = 'none';
+                }, 300);
+            }
+        });
+    });
 });
 
-// Set current year in footer
-currentYearSpan.textContent = new Date().getFullYear();
-
-// Project filtering (for future enhancement)
-// This could be extended to filter projects by technology or type
-function filterProjects(filter) {
-    const projectCards = document.querySelectorAll('.project-card');
-    
-    projectCards.forEach(card => {
-        if (filter === 'all' || card.querySelector('.project-badge').classList.contains(filter)) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
+// Form Submission
+if (contactForm) {
+    contactForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Get form values
+        const name = this.querySelector('input[type="text"]').value;
+        const email = this.querySelector('input[type="email"]').value;
+        const message = this.querySelector('textarea').value;
+        
+        // Create form message element if it doesn't exist
+        let formMessage = document.getElementById('formMessage');
+        if (!formMessage) {
+            formMessage = document.createElement('div');
+            formMessage.id = 'formMessage';
+            formMessage.className = 'form-message success';
+            this.appendChild(formMessage);
         }
+        
+        // Show success message
+        formMessage.textContent = `Thank you, ${name}! Your message has been received. I'll contact you at ${email} soon.`;
+        formMessage.className = 'form-message success';
+        
+        // Reset form
+        this.reset();
+        
+        // Scroll to message for mobile users
+        if (window.innerWidth < 768) {
+            formMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // Hide message after 5 seconds
+        setTimeout(() => {
+            formMessage.textContent = '';
+        }, 5000);
     });
 }
 
-// Add some interactive animations to skill categories
-document.querySelectorAll('.skill-category').forEach(category => {
-    category.addEventListener('mouseenter', function() {
-        this.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.15)';
-    });
+// Touch-friendly hover effects for mobile
+document.querySelectorAll('.skill-category, .project-card').forEach(element => {
+    element.addEventListener('touchstart', function() {
+        this.style.transform = 'translateY(-5px)';
+    }, { passive: true });
     
-    category.addEventListener('mouseleave', function() {
-        this.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.1)';
-    });
+    element.addEventListener('touchend', function() {
+        this.style.transform = 'translateY(0)';
+    }, { passive: true });
 });
 
-// Add animation to project cards on scroll
+// Prevent horizontal scroll on mobile
+document.body.addEventListener('touchmove', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        return;
+    }
+    
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        if (touch.clientX <= 10 || touch.clientX >= window.innerWidth - 10) {
+            e.preventDefault();
+        }
+    }
+}, { passive: false });
+
+// Add animation to elements on scroll
 const observerOptions = {
     threshold: 0.1,
-    rootMargin: '0px 0px -100px 0px'
+    rootMargin: '0px 0px -50px 0px'
 };
 
 const observer = new IntersectionObserver((entries) => {
@@ -134,44 +214,44 @@ document.querySelectorAll('.project-card').forEach(card => {
 // Observe timeline items for scroll animations
 document.querySelectorAll('.timeline-item').forEach(item => {
     item.style.opacity = '0';
-    item.style.transform = 'translateX(-20px)';
+    item.style.transform = 'translateX(-10px)';
     item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
     observer.observe(item);
 });
 
-// Add some delay to timeline items for staggered animation
-document.querySelectorAll('.timeline-item').forEach((item, index) => {
-    item.style.transitionDelay = `${index * 0.1}s`;
+// Observe skill categories for scroll animations
+document.querySelectorAll('.skill-category').forEach(category => {
+    category.style.opacity = '0';
+    category.style.transform = 'translateY(20px)';
+    category.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(category);
 });
-// Project Filtering
-const filterBtns = document.querySelectorAll('.filter-btn');
-const projectCards = document.querySelectorAll('.project-card');
 
-filterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-        // Remove active class from all buttons
-        filterBtns.forEach(b => b.classList.remove('active'));
-        // Add active class to clicked button
-        btn.classList.add('active');
-        
-        const filter = btn.getAttribute('data-filter');
-        
-        projectCards.forEach(card => {
-            const categories = card.getAttribute('data-category');
-            
-            if (filter === 'all' || categories.includes(filter)) {
-                card.style.display = 'block';
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 100);
-            } else {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                setTimeout(() => {
-                    card.style.display = 'none';
-                }, 300);
-            }
-        });
-    });
-});
+// Fix for iOS viewport height issue
+function setViewportHeight() {
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+setViewportHeight();
+window.addEventListener('resize', setViewportHeight);
+window.addEventListener('orientationchange', setViewportHeight);
+
+// Prevent zoom on double-tap for iOS
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(event) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+
+// Add CSS variable for viewport height
+const style = document.createElement('style');
+style.textContent = `
+    .hero {
+        min-height: calc(var(--vh, 1vh) * 100 - 70px);
+    }
+`;
+document.head.appendChild(style);
